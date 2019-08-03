@@ -1,0 +1,6 @@
+#pragma once
+
+namespace GlobalConfiguration {
+    static const char* authorEmail = "@AUTHOR_EMAIL@";
+    static const char* version = "@PROJECT_VERSION@";
+};
