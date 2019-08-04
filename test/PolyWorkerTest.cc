@@ -1,25 +1,31 @@
 #include "PolyWorker.hh"
 #include <gtest/gtest.h>
 #include <iostream>
+#include <sstream>
 
 
 /// A callback typedef used to perform work
 int doWork (int&& input, void* pUser)
 {
-    std::cout << "do work: " << input << std::endl;
+    std::ostringstream ss;
+    ss << "do work: " << input << std::endl;
+    std::cout << ss.str();
     return input * 2;
 }
 
 /// A callback typedef used when a piece of work is completed
 void workComplete(int&& output, void* pUser)
 {
-    std::cout << "work done: " << output << std::endl;
+    std::ostringstream ss;
+    ss << "work done: " << output << std::endl;
+    std::cout << ss.str();
+
 }
 
 /// A callback typedef used when all work is completed
 void allWorkComplete(void* pUser)
 {
-    std::cout << "all work completed" << std::endl;
+    std::cout << "all work completed\n";
 }
 
 TEST(PolyWorkerTest, start)
