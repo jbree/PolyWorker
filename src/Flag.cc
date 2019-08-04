@@ -44,9 +44,9 @@ void Flag::post ()
 
 bool Flag::wait ()
 {
-    return false;
-
     dispatch_semaphore_wait(sem_, DISPATCH_TIME_FOREVER);
+
+    return !cancelled_;
 }
 
 
