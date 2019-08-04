@@ -1,9 +1,8 @@
 #pragma once
 
+#include "BlockingFifo.hh"
 #include "Flag.hh"
 #include "WorkerThread.hh"
-#include <iostream>
-#include <queue>
 #include <thread>
 
 
@@ -24,29 +23,31 @@ public:
         size_t workerCount,
         DoWork doWorkCallback,
         WorkComplete workCompleteCallback,
-        AllWorkComplete allWorkCompleteCallback
+        AllWorkComplete allWorkCompleteCallback,
+        void* pUser
     )
     : doWork_(doWorkCallback)
     , workComplete_(workCompleteCallback)
     , allWorkComplete_(allWorkCompleteCallback)
+    , pUser_(pUser)
+    , finished_(false)
+    , synchronizer_(&PolyWorker::synchronizer, this)
     {
+        for (size_t i(0); i < workerCount; i++) {
+            workers_.emplace(workers_.end(), &PolyWorker::worker, this);
+        }
     }
 
 
     ~PolyWorker ()
     {
-        if (synchronizeThread_) {
-            synchronizeThread_->join();
-        } 
+        for (auto& thr: workers_) {
+            thr.join();
+        }
+
+        synchronizer_.join();
     }
 
-
-    void start ()
-    {
-        synchronizeThread_.reset(new std::thread(&PolyWorker::synchronizer, this));
-
-        workers_.emplace(workers_.end(), &PolyWorker::worker, this);
-    }
 
     void addWork (
             InputT&& todo
@@ -54,86 +55,87 @@ public:
     {
         auto work = std::make_shared<Work<InputT, OutputS>>();
         work->input = std::move(todo);
-
-        availableMutex_.lock();
         workAvailable_.push(work);
-        availableMutex_.unlock();
-
-        work_.post();
     }
 
 
-    std::shared_ptr<Work<InputT, OutputS>> getWork ()
+    void endWork ()
     {
-        work_.wait();
-    
-        availableMutex_.lock();
-        inProgressMutex_.lock();
-
-        workInProgress_.push(std::move(workAvailable_.front()));
-        auto& work(workInProgress_.back());
-        workAvailable_.pop();
-
-        inProgressMutex_.unlock();
-        availableMutex_.unlock();
-
-        inProgressFlag_.post();
-
-        return work;
+        for (size_t i(0); i < workers_.size(); i++) {
+            workAvailable_.push(nullptr);
+        }
     }
 
 private:
 
+    std::shared_ptr<Work<InputT, OutputS>> getWork ()
+    {
+        workTransfer_.lock();
+
+        auto work(workAvailable_.pop());
+        
+        if (!work) {
+            if (!finished_) {
+                finished_ = true;
+                workInProgress_.push(nullptr);
+            }
+            
+            workTransfer_.unlock();
+            return nullptr;
+        }
+
+        workInProgress_.push(work);
+
+        workTransfer_.unlock();
+
+        return work;
+    }
+
+
     void synchronizer ()
     {
-        // wait for work to be added to in-progress queue
-        while (inProgressFlag_.wait()) {
-            inProgressMutex_.lock();
-
-            auto work(std::move(workInProgress_.front()));
-            workInProgress_.pop();
-            inProgressMutex_.unlock();
-
-            // wait for in-progress work to be completed, then invoke callback
+        // Wait for work to be added to in-progress queue
+        std::shared_ptr<Work<InputT, OutputS>> work;
+        
+        while ((work = workInProgress_.pop())) {
+            // Wait for in-progress work to be completed, then invoke callback
             work->flag.wait();
 
-            workComplete_(std::move(work->output), 0);
+            workComplete_(std::move(work->output), pUser_);
         }
+
+        allWorkComplete_(pUser_);
     }
 
 
     void worker ()
     {
-
-        while (true) {
-            auto work(getWork());
-
-            work->output = doWork_(std::move(work->input), 0);
+        std::shared_ptr<Work<InputT, OutputS>> work;
+        while ((work = getWork())) {
+            work->output = doWork_(std::move(work->input), pUser_);
 
             work->flag.post();
         }
-
     }
-
-    std::unique_ptr<std::thread> synchronizeThread_;
-
-    std::queue<std::shared_ptr<Work<InputT, OutputS>>> workInProgress_;
-    std::queue<std::shared_ptr<Work<InputT, OutputS>>> workAvailable_;
-
-    /// indicates available work
-    Flag work_;
-
-    std::vector<std::thread> workers_;
-
-    /// protects workInProgress_ queue
-    Lock inProgressMutex_;
-    Flag inProgressFlag_;
-
-    /// protects workAvailable_ queue
-    Lock availableMutex_;
 
     DoWork doWork_;
     WorkComplete workComplete_;
     AllWorkComplete allWorkComplete_;
+    void* pUser_;
 
+    /// Contains all added work which has not yet been started
+    BlockingFifo<Work<InputT, OutputS>> workAvailable_;
+
+    /// Contains all work in progress and completed work which has not yet been
+    /// posted.
+    BlockingFifo<Work<InputT, OutputS>> workInProgress_;
+
+    /// Prevents multiple 
+    bool finished_;
+
+    /// protects workInProgress_ queue
+    Lock workTransfer_;
+
+    std::thread synchronizer_;
+    std::vector<std::thread> workers_;
 };

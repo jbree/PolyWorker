@@ -1,25 +1,23 @@
 #include "PolyWorker.hh"
 #include <gtest/gtest.h>
+#include <fstream>
 #include <iostream>
+#include <cmath>
 #include <sstream>
 
 
 /// A callback typedef used to perform work
-int doWork (int&& input, void* pUser)
+double doWork (int&& input, void* pUser)
 {
-    std::ostringstream ss;
-    ss << "do work: " << input << std::endl;
-    std::cout << ss.str();
-    return input * 2;
+    return std::sqrt(input);
 }
 
 /// A callback typedef used when a piece of work is completed
-void workComplete(int&& output, void* pUser)
+void workComplete(double&& output, void* pUser)
 {
-    std::ostringstream ss;
-    ss << "work done: " << output << std::endl;
-    std::cout << ss.str();
+    std::ofstream& fs(*static_cast<std::ofstream*>(pUser));
 
+    fs << output << std::endl;
 }
 
 /// A callback typedef used when all work is completed
@@ -30,11 +28,13 @@ void allWorkComplete(void* pUser)
 
 TEST(PolyWorkerTest, start)
 {
-    PolyWorker<int, int> pw(4, doWork, workComplete, allWorkComplete);
-    pw.start();
+    std::ofstream fs("poly.txt");
+    PolyWorker<int, double> pw(8, doWork, workComplete, allWorkComplete, &fs);
 
-    for (int i(0); i < 100; i++) {
+    for (int i(0); i < 10000000; i++) {
         int j(i);
+
         pw.addWork(std::move(j));
     }
+    pw.endWork();
 }

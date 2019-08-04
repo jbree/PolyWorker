@@ -8,4 +8,5 @@ function(create_test TEST_NAME)
   add_test(NAME "${TEST_NAME}Test" COMMAND "${TEST_NAME}Test")
 endfunction()
 
+create_test(MonoWorker)
 create_test(PolyWorker)
