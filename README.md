@@ -19,8 +19,8 @@ Invocations of `addWork()` should be ordered by the user for work output to be
 ordered.
 
 The input work is wrapped in a `Work` object and pushed it onto the queue of
-available work. When a `WorkerThread` is ready to perform a piece of work, they
-invoke `PolyWorker.getWork()`. This method blocks until work is available. When
+available work. When a `WorkerThread` is ready to perform a piece of work, it
+invokes `PolyWorker.getWork()`. This method blocks until work is available. When
 work is available, the method transfers the work from the available work queue
 to the in-progress work queue. It's important that this operation is atomic,
 preventing any incidental reordering.
