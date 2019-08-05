@@ -1,6 +1,7 @@
 #pragma once
 
-#include <dispatch/dispatch.h>
+#include <condition_variable>
+#include <mutex>
 
 
 class Flag {
@@ -8,10 +9,6 @@ class Flag {
 public:
     Flag (
             long initialCount = 0
-            );
-
-    Flag (
-            Flag&& flag
             );
 
     Flag (
@@ -27,6 +24,9 @@ public:
     void cancel ();
 
 private:
-    dispatch_semaphore_t sem_;
+    std::mutex mutex_;
+    std::condition_variable condition_;
+    
     bool cancelled_;
+    uint32_t count_;
 };

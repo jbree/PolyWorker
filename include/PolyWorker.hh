@@ -2,7 +2,6 @@
 
 #include "BlockingFifo.hh"
 #include "Flag.hh"
-// #include "WorkerThread.hh"
 #include <thread>
 
 namespace {
@@ -78,7 +77,6 @@ public:
     }
 
 private:
-
 
     std::shared_ptr<Work<InputT, OutputS>> getWork ()
     {
