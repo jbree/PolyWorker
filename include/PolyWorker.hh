@@ -2,8 +2,19 @@
 
 #include "BlockingFifo.hh"
 #include "Flag.hh"
-#include "WorkerThread.hh"
+// #include "WorkerThread.hh"
 #include <thread>
+
+namespace {
+
+template <typename InputT, typename OutputS>
+struct Work {
+    InputT input;
+    OutputS output;
+    Flag flag;
+};
+
+}
 
 
 template <typename InputT, typename OutputS>
@@ -67,6 +78,7 @@ public:
     }
 
 private:
+
 
     std::shared_ptr<Work<InputT, OutputS>> getWork ()
     {

@@ -31,7 +31,7 @@ TEST(PolyWorkerTest, start)
     std::ofstream fs("poly.txt");
     PolyWorker<int, double> pw(8, doWork, workComplete, allWorkComplete, &fs);
 
-    for (int i(0); i < 10000000; i++) {
+    for (int i(0); i < 100000; i++) {
         int j(i);
 
         pw.addWork(std::move(j));
