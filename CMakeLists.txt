@@ -18,14 +18,12 @@ configure_file(
     )
 
 set(SOURCES
-#    src/main.cc
     src/Flag.cc
     )
 
 set(HEADERS
     include/Flag.hh
     include/PolyWorker.hh
-    include/WorkerThread.hh
     ${GENERATED_DIR}/include/GlobalConfiguration.hh
     )
 
