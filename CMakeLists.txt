@@ -20,12 +20,10 @@ configure_file(
 set(SOURCES
 #    src/main.cc
     src/Flag.cc
-    src/Lock.cc
     )
 
 set(HEADERS
     include/Flag.hh
-    include/Lock.hh
     include/PolyWorker.hh
     include/WorkerThread.hh
     ${GENERATED_DIR}/include/GlobalConfiguration.hh

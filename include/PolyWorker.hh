@@ -70,7 +70,7 @@ private:
 
     std::shared_ptr<Work<InputT, OutputS>> getWork ()
     {
-        workTransfer_.lock();
+        std::lock_guard<std::mutex> lock(workTransfer_);
 
         auto work(workAvailable_.pop());
         
@@ -85,8 +85,6 @@ private:
         }
 
         workInProgress_.push(work);
-
-        workTransfer_.unlock();
 
         return work;
     }
@@ -134,7 +132,7 @@ private:
     bool finished_;
 
     /// protects workInProgress_ queue
-    Lock workTransfer_;
+    std::mutex workTransfer_;
 
     std::thread synchronizer_;
     std::vector<std::thread> workers_;
