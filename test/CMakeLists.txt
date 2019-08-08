@@ -10,3 +10,4 @@ endfunction()
 
 create_test(MonoWorker)
 create_test(PolyWorker)
+create_test(Flag)
